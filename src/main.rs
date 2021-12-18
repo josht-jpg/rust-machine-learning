@@ -4,7 +4,12 @@ mod knn_tests;
 mod machine_learning;
 mod machine_learning_tests;
 mod matrix;
+mod naive_bayes;
+mod naive_bayes_tests;
+mod utils;
 mod vector;
+
+use std::collections::HashSet;
 
 fn main() {
     /*  let v1 = vector::Vector {
@@ -96,5 +101,23 @@ fn main() {
 
     // machine_learning::test_train_test_split()
 
-    k_nearest_neighbors::kmeans_iris();
+    // k_nearest_neighbors::kmeans_iris();
+
+    let text = "I love Rust and Rust loves me".to_lowercase();
+    let input = text.as_str();
+
+    let result = naive_bayes::tokenize(input);
+
+    println!("{:?}", result);
+
+    let mut expected: HashSet<&str> = HashSet::new();
+    expected.insert("i");
+    expected.insert("love");
+    expected.insert("rust");
+    expected.insert("and");
+    expected.insert("loves");
+    expected.insert("me");
+    // expected.insert("<3");
+
+    println!("expected: {:?}      result: {:?}", expected, result)
 }
