@@ -29,21 +29,21 @@ pub struct Message<'a> {
 
 pub struct NaiveBayesClassifier {
     k: f64,
-    pub tokens: HashSet<String>,
-    pub token_ham_counts: HashMap<String, i32>,
-    pub token_spam_counts: HashMap<String, i32>,
-    pub spam_messages: i32,
-    pub ham_messages: i32,
+    pub tokens: HashMap<String, Counts>,
+    pub totals: Counts,
+}
+
+#[derive(PartialEq, Eq, Default, Debug)]
+pub struct Counts {
+    pub spam: u32,
+    pub ham: u32,
 }
 
 pub fn new_classifier(k: f64) -> NaiveBayesClassifier {
     return NaiveBayesClassifier {
         k,
-        tokens: HashSet::new(),
-        token_ham_counts: HashMap::new(),
-        token_spam_counts: HashMap::new(),
-        spam_messages: 0,
-        ham_messages: 0,
+        tokens: HashMap::new(),
+        totals: Counts { ham: 0, spam: 0 },
     };
 }
 
@@ -52,40 +52,31 @@ impl NaiveBayesClassifier {
         for i in 0..messages.len() {
             let message = &messages[i];
             if message.is_spam {
-                self.spam_messages += 1;
+                self.totals.spam += 1;
             } else {
-                self.ham_messages += 1;
+                self.totals.ham += 1;
             }
 
             // Increment word counts
             for token in tokenize(message.text) {
-                self.tokens.insert(token.to_string());
-
-                if !self.token_spam_counts.contains_key(token) {
-                    self.token_spam_counts.insert(token.to_string(), 0);
-                }
-
-                if !self.token_ham_counts.contains_key(token) {
-                    self.token_ham_counts.insert(token.to_string(), 0);
-                }
+                let counts = self.tokens.entry(token.to_string()).or_default();
 
                 if message.is_spam {
-                    *self.token_spam_counts.get_mut(token).unwrap() += 1;
+                    counts.spam += 1;
                 } else {
-                    *self.token_ham_counts.get_mut(token).unwrap() += 1;
+                    counts.ham += 1;
                 }
             }
         }
     }
 
     fn probabilites(&self, token: &str) -> (f64, f64) {
-        println!("token: {}, hasmap: {:?}", token, self.token_spam_counts);
+        println!("token: {}, hasmap: {:?}", token, self.tokens);
 
-        let spam = self.token_spam_counts[token];
-        let ham = self.token_ham_counts[token];
+        let Counts { ham, spam } = self.tokens[token];
 
-        let prob_of_token_spam = (spam as f64 + self.k) / (self.spam_messages as f64 + 2. * self.k);
-        let prob_of_token_ham = (ham as f64 + self.k) / (self.ham_messages as f64 + 2. * self.k);
+        let prob_of_token_spam = (spam as f64 + self.k) / (self.totals.spam as f64 + 2. * self.k);
+        let prob_of_token_ham = (ham as f64 + self.k) / (self.totals.ham as f64 + 2. * self.k);
 
         return (prob_of_token_spam, prob_of_token_ham);
     }
@@ -95,7 +86,7 @@ impl NaiveBayesClassifier {
         let mut log_prob_if_spam = 0.;
         let mut log_prob_if_ham = 0.;
 
-        for token in self.tokens.iter() {
+        for token in self.tokens.keys() {
             let (prob_if_spam, prob_if_ham) = self.probabilites(&token);
 
             // If *token* appears in the message,

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::naive_bayes::{self, new_classifier, Message, NaiveBayesClassifier};
+    use crate::naive_bayes::{self, new_classifier, Counts, Message, NaiveBayesClassifier};
     use std::collections::{HashMap, HashSet};
 
     /* fn messages() -> [Message<'static>; 3] {
@@ -60,33 +60,16 @@ mod tests {
         let mut model = new_classifier(0.5);
         model.train(&messages);
 
-        let mut expected_tokens: HashSet<String> = HashSet::new();
-        expected_tokens.insert("spam".to_string());
-        expected_tokens.insert("ham".to_string());
-        expected_tokens.insert("rules".to_string());
-        expected_tokens.insert("hello".to_string());
+        let mut expected_tokens: HashMap<String, Counts> = HashMap::from([
+            ("spam".to_string(), Counts { spam: 1, ham: 0 }),
+            ("rules".to_string(), Counts { spam: 1, ham: 1 }),
+            ("ham".to_string(), Counts { spam: 0, ham: 2 }),
+            ("hello".to_string(), Counts { spam: 0, ham: 1 }),
+        ]);
 
         assert_eq!(model.tokens, expected_tokens);
-        assert_eq!(model.spam_messages, 1);
-        assert_eq!(model.ham_messages, 2);
-        assert_eq!(
-            model.token_spam_counts,
-            HashMap::from([
-                ("spam".to_string(), 1),
-                ("rules".to_string(), 1),
-                ("ham".to_string(), 0),
-                ("hello".to_string(), 0)
-            ])
-        );
-        assert_eq!(
-            model.token_ham_counts,
-            HashMap::from([
-                ("ham".to_string(), 2),
-                ("rules".to_string(), 1),
-                ("hello".to_string(), 1),
-                ("spam".to_string(), 0)
-            ])
-        );
+        assert_eq!(model.totals.spam, 1);
+        assert_eq!(model.totals.ham, 2);
 
         let text = "hello spam";
 
